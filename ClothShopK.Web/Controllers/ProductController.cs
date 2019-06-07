@@ -1,5 +1,6 @@
 ﻿using ClothShopK.Entities;
 using ClothShopK.Service;
+using ClothShopK.Web.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace ClothShopK.Web.Controllers
     public class ProductController : Controller
     {
         ProductsService productsService = new ProductsService();
+        CategoriesService categoryService = new CategoriesService();
         // GET: Product
         public ActionResult Index()
         {
@@ -18,44 +20,75 @@ namespace ClothShopK.Web.Controllers
             return View();
         }
 
+
         public ActionResult ProductTable(string search)
         {
-            var products = productsService.GetProducts();
+            ProductSearchViewModel model = new ProductSearchViewModel();
+            model.Products = productsService.GetProducts();
+            //var products = productsService.GetProducts();
 
             if (string.IsNullOrEmpty(search)==false)
             {
-                products = products.Where(p => p.Name!=null&&p.Name.ToLower().Contains(search.ToLower())).ToList();
+                model.SearchTerm = search;
+                model.Products = model.Products.Where(p => p.Name != null && p.Name.ToLower().Contains(search.ToLower())).ToList();
+                //products = products.Where(p => p.Name!=null&&p.Name.ToLower().Contains(search.ToLower())).ToList();
 
             }
 
-            return PartialView(products);
+            return PartialView(model);
         }
 
         [HttpGet]
         public ActionResult Create()
         {
-            return PartialView();
+            NewProductViewModel model = new NewProductViewModel();
+
+
+            model.AvailableCategories = categoryService.GetCategories();
+
+
+            return PartialView(model);
         }
 
         [HttpPost]
-        public ActionResult Create(Product product)
+        public ActionResult Create(NewProductViewModel model)
         {
-            productsService.SaveProduct(product);
+           // CategoriesService categoriesService = new CategoriesService();
+
+            var newProduct = new Product();
+            newProduct.Name = model.Name;
+            newProduct.Description = model.Description;
+            newProduct.Price = model.Price;
+            //newProduct.CategoryID = model.CategoryID;
+            newProduct.Category = categoryService.GetCategory(model.CategoryID);
+
+            productsService.SaveProduct(newProduct);
             return RedirectToAction("ProductTable");
         }
 
         [HttpGet]
         public ActionResult Edit(int ID)
         {
+            EditProductViewModel model = new EditProductViewModel();
             var product = productsService.GetProduct(ID);
-
-            return PartialView(product);
+            model.Description = product.Description;
+            model.Price = product.Price;
+            model.CategoryID = product.Category != null ? product.Category.ID : 0;
+            model.AvailableCategories = categoryService.GetCategories();
+            return PartialView(model);
+           
         }
 
         [HttpPost]
-        public ActionResult Edit(Product product)
+        public ActionResult Edit(EditProductViewModel model)
         {
-            productsService.UpdateProduct(product);
+            var existingProduct = productsService.GetProduct(model.ID);
+            existingProduct.Name = model.Name;
+            existingProduct.Description = model.Description;
+
+            existingProduct.Price = model.Price;
+            existingProduct.Category = categoryService.GetCategory(model.CategoryID);
+            productsService.UpdateProduct(existingProduct);
             return RedirectToAction("ProductTable");
         }
 

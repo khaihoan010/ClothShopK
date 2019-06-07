@@ -5,11 +5,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data.Entity;
 
 namespace ClothShopK.Service
 {
     public class CategoriesService
     {
+        //public static CategoriesService Instance
+        //{
+        //    get
+        //    {
+        //        if (instance == null) instance = new CategoriesService();
+
+        //        return instance;
+        //    }
+        //}
+        //private static CategoriesService instance { get; set; }
+
         public Category GetCategory(int ID)
         {
             using (var context = new CBContext())
@@ -22,13 +34,20 @@ namespace ClothShopK.Service
         {
             using (var context = new CBContext())
             {
-                return context.Categories.ToList();
+                return context.Categories.Include(x => x.Products).ToList();
+            }
+        }
+        public List<Category> GetFeaturedCategories()
+        {
+            using (var context = new CBContext())
+            {
+                return context.Categories.Where(x => x.isFeatured && x.ImageURL != null).ToList();
             }
         }
 
         public void SaveCategory(Category category)
         {
-            using(var context=new CBContext())
+            using (var context = new CBContext())
             {
                 context.Categories.Add(category);
                 context.SaveChanges();
